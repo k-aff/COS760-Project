@@ -1,0 +1,11 @@
+python-dotenv
+datasets<3.0.0
+huggingface_hub
+pandas
+tqdm
+torch
+numpy
+transformers
+scipy
+scikit-learn
+matplotlib
