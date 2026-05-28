@@ -560,8 +560,8 @@ import matplotlib.cm as cm
 from sklearn.decomposition import PCA
 
 def plot_pca(embs, labels, lang_codes, name_map, title, ax):
-    pca    = PCA(n_components=2, random_state=42)
-    proj   = pca.fit_transform(embs)
+    pca    = PCA(n_components=2, random_state=42, svd_solver="full")
+    proj   = pca.fit_transform(embs.astype(np.float64))
     colors = cm.tab10(np.linspace(0, 1, len(lang_codes)))
     for idx, (lc, col) in enumerate(zip(lang_codes, colors)):
         mask = labels == idx
