@@ -38,10 +38,11 @@ else:
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-# Colab reads from Secrets, locally we use .env
+# Colab reads from Secrets or env var, locally we use .env
 if IN_COLAB:
     try:
-        login(userdata.get("HF_TOKEN"))
+        token = os.environ.get("HF_TOKEN") or userdata.get("HF_TOKEN")
+        login(token)
         print("Logged in to Hugging Face (Colab Secrets).")
     except Exception as e:
         print(f"Login failed. Set HF_TOKEN in Colab Secrets (key icon, toggle Notebook access ON): {e}")
