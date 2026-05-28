@@ -42,7 +42,15 @@ In Colab, click the **key icon** in the left sidebar, then:
 
 **Step 5: Run**
 
-In a code cell, run:
+Because the script runs as a subprocess, Colab Secrets aren't directly accessible inside it. First run this in a cell to export the token so the subprocess can see it:
+
+```python
+import os
+from google.colab import userdata
+os.environ["HF_TOKEN"] = userdata.get("HF_TOKEN")
+```
+
+Then in a new cell run:
 
 ```python
 !python complete_notebook.py
