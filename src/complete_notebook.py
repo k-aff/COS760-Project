@@ -12,22 +12,47 @@ Original file is located at
 This notebook fine-tunes AfroXLMR and XLM-R on Kinyarwanda relatedness data, evaluates zero-shot transfer to Hausa and Amharic, and analyses sentence embedding clusters for South African languages using FLORES-200 and Mafand-MT.
 """
 
-# permits remote code executions used by flores and mafand
-
-!pip install "datasets<3.0.0"
+# needs to be pinned for mafand to load properly
+import subprocess, sys
+subprocess.run([sys.executable, "-m", "pip", "install", "datasets<3.0.0", "-q"])
 
 import os
-from google.colab import userdata
+from pathlib import Path
 from huggingface_hub import login
 
+# works on Colab and locally without any changes
 try:
-    hf_token = userdata.get('HF_TOKEN')
+    from google.colab import userdata
+    IN_COLAB = True
+except ImportError:
+    IN_COLAB = False
 
-    # Karabo: Makes things easier and faster with Hugging Face
-    login(hf_token)
-    print("Successfully logged in to the Hugging Face Hub!")
-except Exception as e:
-    print(f"Login failed. Make sure 'HF_TOKEN' is set in your Secrets tab and notebook access is toggled on: {e}")
+if IN_COLAB:
+    DATA_DIR  = "/content/data"
+    MODEL_DIR = "/content/models"
+else:
+    _ROOT     = Path(__file__).resolve().parent.parent
+    DATA_DIR  = str(_ROOT / "data")
+    MODEL_DIR = str(_ROOT / "models")
+
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+# Colab reads from Secrets, locally we use .env
+if IN_COLAB:
+    try:
+        login(userdata.get("HF_TOKEN"))
+        print("Logged in to Hugging Face (Colab Secrets).")
+    except Exception as e:
+        print(f"Login failed. Set HF_TOKEN in Colab Secrets (key icon, toggle Notebook access ON): {e}")
+else:
+    from dotenv import load_dotenv
+    load_dotenv(_ROOT / ".env")
+    try:
+        login(os.environ["HF_TOKEN"])
+        print("Logged in to Hugging Face (.env).")
+    except KeyError:
+        print("HF_TOKEN not found. Add it to your .env file.")
 
 import os
 import json
@@ -35,16 +60,12 @@ import pandas as pd
 from datasets import load_dataset
 from tqdm import tqdm
 
-DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
-
-# 1. SemRel2024 - labelled relatedness pairs
 
 # Languages from SemRel2024:
 # kin = Kinyarwanda (Bantu-our training language)
 # hau = Hausa (Afro-Asiatic Chadic-cross-family test)
 # amh = Amharic (Afro-Asiatic Semitic-cross-family test)
-
 SEMREL_LANGS = {
     "kin": "Kinyarwanda",
     "hau": "Hausa",
@@ -78,13 +99,6 @@ for code, name in SEMREL_LANGS.items():
         print(f"Unable to load {name}: {e}")
 
 # 2. FLORES-200 - unlabelled South African sentences
-from datasets import load_dataset
-from google.colab import userdata
-from huggingface_hub import login
-
-# Make sure we're logged in
-login(os.environ["HF_TOKEN"])
-
 FLORES_LANGS = {
     "zul_Latn": "isiZulu",
     "xho_Latn": "isiXhosa",
@@ -203,8 +217,6 @@ MODELS = {
     "xlmr": "FacebookAI/xlm-roberta-base",
 }
 
-DATA_DIR   = "data"
-MODEL_DIR  = "models"
 TRAIN_LANG = "kin"   #Kinyarwanda
 BATCH_SIZE = 8       # reduced from 16 — large model needs smaller batches to stay stable
 EPOCHS     = 6
